@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111d23"/><stop offset="1" stop-color="#04080b"/></linearGradient>
+    <radialGradient id="well"><stop stop-color="#08151a"/><stop offset=".62" stop-color="#020608"/><stop offset="1" stop-color="#000"/></radialGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse"><path d="M42 0H0V42" fill="none" stroke="#87cfd0" stroke-opacity=".08"/></pattern>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/><rect width="1200" height="800" fill="url(#grid)"/>
+  <path d="M0 640L210 510 440 580 690 405 940 510 1200 340V800H0Z" fill="#071116" stroke="#27464b" stroke-width="3"/>
+  <g stroke="#3a6267" stroke-width="5" opacity=".6"><path d="M120 0v510M260 80v410M1020 0v530M1080 180v300"/><path d="M0 160h1200M0 300h1200M0 480h1200"/></g>
+  <path d="M274 564L404 448 824 448 948 564 850 635H375Z" fill="#18272b" stroke="#55747a" stroke-width="5"/>
+  <ellipse cx="610" cy="570" rx="275" ry="96" fill="#000" stroke="#9bb8b7" stroke-width="7"/><ellipse cx="610" cy="570" rx="245" ry="72" fill="url(#well)"/>
+  <g fill="none" stroke="#8e292c" stroke-width="7" filter="url(#glow)" opacity=".9"><ellipse cx="610" cy="570" rx="162" ry="43"/><ellipse cx="610" cy="570" rx="103" ry="27"/><path d="M430 522l-55-48M790 522l60-49M500 624l-42 39M720 624l48 38"/></g>
+  <g fill="#d77b55"><rect x="104" y="220" width="92" height="12"/><rect x="1000" y="248" width="82" height="12"/><rect x="910" y="642" width="120" height="10"/></g>
+  <g fill="#ad3b3d" opacity=".8"><circle cx="160" cy="240" r="7"/><circle cx="1040" cy="268" r="7"/><circle cx="970" cy="662" r="7"/></g>
+  <text x="48" y="74" fill="#95b8b6" opacity=".7" font-family="monospace" font-size="18" letter-spacing="4">SITE-19 / CAMERA 04 / 03:17:42</text>
+  <text x="930" y="746" fill="#af3c40" font-family="monospace" font-size="16" letter-spacing="2">ANOMALY DETECTED</text>
+</svg>

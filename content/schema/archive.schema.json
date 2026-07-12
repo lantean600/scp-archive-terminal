@@ -1,0 +1,30 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SCP Archive",
+  "type": "object",
+  "required": ["id", "itemNumber", "title", "objectClass", "threatLevel", "status", "site", "clearanceLevel", "lastUpdated", "image", "imageCaption", "containmentProcedures", "description", "discoveryLog", "appendices", "characteristics", "radarMetrics", "relatedArchives"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9-]{3,80}$" },
+    "itemNumber": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "title": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "objectClass": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "threatLevel": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "status": { "type": "string", "minLength": 1, "maxLength": 80 },
+    "site": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "clearanceLevel": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "lastUpdated": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "image": { "type": "string", "pattern": "^[^<>\\\"']+$" },
+    "imageCaption": { "type": "string", "maxLength": 500 },
+    "containmentProcedures": { "$ref": "#/definitions/section" },
+    "description": { "$ref": "#/definitions/section" },
+    "discoveryLog": { "$ref": "#/definitions/section" },
+    "appendices": { "type": "array", "maxItems": 20, "items": { "type": "object", "required": ["tag", "title", "body"], "additionalProperties": false, "properties": { "tag": { "type": "string", "maxLength": 60 }, "title": { "type": "string", "maxLength": 160 }, "body": { "type": "string", "maxLength": 5000 } } } },
+    "characteristics": { "type": "array", "maxItems": 12, "items": { "type": "object", "required": ["label", "value", "level"], "additionalProperties": false, "properties": { "label": { "type": "string", "maxLength": 60 }, "value": { "type": "string", "maxLength": 100 }, "level": { "type": "number", "minimum": 0, "maximum": 100 }, "tone": { "type": "string", "enum": ["red", "amber", "cyan"] } } } },
+    "radarMetrics": { "type": "array", "minItems": 6, "maxItems": 6, "items": { "type": "object", "required": ["label", "value"], "additionalProperties": false, "properties": { "label": { "type": "string", "maxLength": 60 }, "value": { "type": "number", "minimum": 0, "maximum": 100 } } } },
+    "relatedArchives": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 160 } },
+    "archiveStatus": { "type": "string", "enum": ["draft", "published"] },
+    "metadata": { "type": "object", "additionalProperties": false, "properties": { "authorGithubLogin": { "type": "string", "maxLength": 80 }, "submittedAt": { "type": "string", "maxLength": 50 }, "sourcePullRequest": { "type": "integer", "minimum": 1 } } }
+  },
+  "definitions": { "section": { "type": "object", "required": ["title", "paragraphs"], "additionalProperties": false, "properties": { "title": { "type": "string", "maxLength": 100 }, "paragraphs": { "type": "array", "minItems": 1, "maxItems": 30, "items": { "type": "string", "minLength": 1, "maxLength": 5000 } } } } }
+}

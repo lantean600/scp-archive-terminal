@@ -1,0 +1,2 @@
+import type { Characteristic } from '../types/archive'
+export function MetricCard({ item }: { item: Characteristic }) { return <div className="metric-card"><div className="metric-top"><span>{item.label}</span><b className={item.tone ?? ''}>{item.value}</b></div><div className="metric-track"><i className={item.tone ?? ''} style={{ width: `${item.level}%` }} /></div><small>读数 / {String(item.level).padStart(3, '0')}</small></div> }

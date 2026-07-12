@@ -1,0 +1,14 @@
+name = "scp-archive-contributor-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-12"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "scp-archive-contributor"
+database_id = "REPLACE_WITH_CLOUDFLARE_D1_DATABASE_ID"
+
+[vars]
+GITHUB_OWNER = "lantean600"
+GITHUB_REPO = "scp-archive-terminal"
+GITHUB_DEFAULT_BRANCH = "main"
+PAGES_URL = "https://lantean600.github.io/scp-archive-terminal/"
