@@ -8,9 +8,10 @@ import './styles.css'
 import { Editor } from './components/Editor'
 
 const archive = archives[0]
+const isEditorRoute = new URLSearchParams(window.location.search).get('view') === 'editor' || window.location.pathname.endsWith('/editor') || window.location.pathname.endsWith('/editor/')
 
 export default function App() {
-  if (window.location.pathname.endsWith('/editor') || window.location.pathname.endsWith('/editor/')) return <Editor />
+  if (isEditorRoute) return <Editor />
   const [navOpen, setNavOpen] = useState(false)
   const [lightbox, setLightbox] = useState(false)
   const [openAppendix, setOpenAppendix] = useState(0)
@@ -21,7 +22,7 @@ export default function App() {
       <section className="image-panel"><div className="image-topline"><span><ScanLine size={15} /> VISUAL RECORD / 01</span><span>CAM-04 / LIVE CAPTURE</span></div><button className="image-button" onClick={() => setLightbox(true)} aria-label="放大查看收容物图像"><img src={archive.image} alt="Site-19 地下层收容单元中的回声井" /><span className="scan-corner tl" /><span className="scan-corner tr" /><span className="scan-corner bl" /><span className="scan-corner br" /><span className="image-expand"><Maximize2 size={15} /> EXPAND</span></button><p className="image-caption"><span>图像说明</span>{archive.imageCaption}</p></section>
       <section className="content-grid"><article className="dossier-copy" id="description"><div className="section-heading"><span>01</span><h2>档案正文</h2><i /></div><section className="copy-block"><h3>{archive.containmentProcedures.title}</h3>{archive.containmentProcedures.paragraphs.map(p => <p key={p}>{p}</p>)}</section><section className="copy-block"><h3>{archive.description.title}</h3>{archive.description.paragraphs.map(p => <p key={p}>{p}</p>)}</section><section className="copy-block discovery"><h3>{archive.discoveryLog.title}<small>RECOVERY LOG / 2024.11.08</small></h3>{archive.discoveryLog.paragraphs.map(p => <p key={p}>{p}</p>)}</section></article><aside className="analysis-panel" id="characteristics"><div className="section-heading"><span>02</span><h2>特性分析</h2><i /></div><div className="metrics">{archive.characteristics.map(item => <MetricCard item={item} key={item.label} />)}</div><div className="radar-card"><div className="card-kicker">异常轮廓 <span>LIVE MODEL</span></div><RadarChart metrics={archive.radarMetrics} /></div></aside></section>
       <section className="timeline-section" id="timeline"><div className="section-heading"><span>03</span><h2>附录与事件记录</h2><i /><b>SECURITY LEVEL / 3</b></div><div className="appendices">{archive.appendices.map((item, i) => <div className={`appendix ${openAppendix === i ? 'open' : ''}`} key={item.tag}><button onClick={() => setOpenAppendix(openAppendix === i ? -1 : i)} aria-expanded={openAppendix === i}><span className="appendix-tag">{item.tag}</span><strong>{item.title}</strong><ChevronDown size={17} /></button>{openAppendix === i && <p>{item.body}</p>}</div>)}</div></section>
-      <section className="related-strip"><div><span className="eyebrow">NEXT AVAILABLE RECORD</span><h3>声源索引 <small>SCP-CN-███-A</small></h3></div><a href="#" onClick={e => e.preventDefault()}>OPEN PLACEHOLDER <ArrowUpRight size={16} /></a></section>
+      <section className="related-strip"><div><span className="eyebrow">NEXT AVAILABLE RECORD</span><h3>声源索引 <small>SCP-CN-███-A</small></h3></div><a className="editor-entry" href={`${import.meta.env.BASE_URL}?view=editor`}>OPEN CONTRIBUTION TERMINAL <ArrowUpRight size={16} /></a></section>
       <footer className="terminal-footer"><span>ARCHIVE INTEGRITY <b>98.4%</b></span><span>LAST SYNC <b>{archive.lastUpdated} / 03:16:00</b></span><span className="footer-alert"><CircleAlert size={14} /> 1 项警示待复核</span></footer>
     </main></div>
     {lightbox && <div className="lightbox" role="dialog" aria-modal="true" aria-label="收容物图像预览" onClick={() => setLightbox(false)}><button aria-label="关闭图像预览">×</button><img src={archive.image} alt={archive.imageCaption} onClick={e => e.stopPropagation()} /></div>}
