@@ -8,6 +8,7 @@ database_name = "scp-archive-contributor"
 database_id = "1ac1e99c-0099-481d-b71d-0c66c724da50"
 
 [vars]
+GITHUB_CLIENT_ID = "Ov23liIA7LYiEBH1E00L"
 GITHUB_OWNER = "lantean600"
 GITHUB_REPO = "scp-archive-terminal"
 GITHUB_DEFAULT_BRANCH = "main"
