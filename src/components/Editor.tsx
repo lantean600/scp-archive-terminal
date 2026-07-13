@@ -20,6 +20,7 @@ export function Editor() {
   })
   const [user, setUser] = useState<{ login: string } | null>(null)
   const [authChecked, setAuthChecked] = useState(false)
+  const [loginStarting, setLoginStarting] = useState(false)
   const [image, setImage] = useState<{ filename: string; contentBase64: string; mimeType: string } | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [message, setMessage] = useState('')
@@ -28,7 +29,7 @@ export function Editor() {
   useEffect(() => {
     if (!apiBase) { setAuthChecked(true); return }
     let active = true
-    fetch(`${apiBase}/api/me`, { credentials: 'include' })
+    fetch(`${apiBase}/api/me`, { credentials: 'include', cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error(`auth status ${response.status}`)
         return response.json() as Promise<{ user?: { login: string } | null }>
@@ -71,7 +72,7 @@ export function Editor() {
     } finally { setSubmitting(false) }
   }
   const sectionValue = (field: 'containmentProcedures' | 'description' | 'discoveryLog') => sectionText(draft[field])
-  return <div className="editor-shell"><header className="editor-topbar"><a href={import.meta.env.BASE_URL} className="editor-back"><ArrowLeft size={16} /> 返回档案站</a><div><span className="editor-kicker">CONTRIBUTION TERMINAL</span><h1>提交一份新的档案</h1></div><div className={`editor-user${user ? ' editor-user--authenticated' : ''}`}>{user ? <><span className="status-dot" /> 已登录 @{user.login}</> : authChecked ? <a href={apiConfigured ? `${apiBase}/auth/github` : '#'}><LogIn size={15} /> GitHub 登录</a> : <span className="editor-auth-checking">检查登录状态…</span>}</div></header><form className="editor-layout" onSubmit={submit}>
+  return <div className="editor-shell"><header className="editor-topbar"><a href={import.meta.env.BASE_URL} className="editor-back"><ArrowLeft size={16} /> 返回档案站</a><div><span className="editor-kicker">CONTRIBUTION TERMINAL</span><h1>提交一份新的档案</h1></div><div className={`editor-user${user ? ' editor-user--authenticated' : ''}`}>{user ? <><span className="status-dot" /> 已登录 @{user.login}</> : authChecked ? <a href={apiConfigured ? `${apiBase}/auth/github` : '#'} onClick={(event) => { if (!apiConfigured || loginStarting) event.preventDefault(); else setLoginStarting(true) }} aria-disabled={loginStarting}><LogIn size={15} /> {loginStarting ? '正在跳转 GitHub…' : 'GitHub 登录'}</a> : <span className="editor-auth-checking">检查登录状态…</span>}</div></header><form className="editor-layout" onSubmit={submit}>
     <section className="editor-card"><div className="editor-card-title"><span>01</span><h2>基础信息</h2></div><div className="form-grid"><label>档案 slug<input value={draft.id} onChange={(event) => update('id', event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="scp-cn-new-archive" /></label><label>项目编号<input value={draft.itemNumber} onChange={(event) => update('itemNumber', event.target.value)} /></label><label className="wide">标题<input value={draft.title} onChange={(event) => update('title', event.target.value)} placeholder="异常项目名称" /></label><label>收容等级<input value={draft.objectClass} onChange={(event) => update('objectClass', event.target.value)} /></label><label>威胁等级<input value={draft.threatLevel} onChange={(event) => update('threatLevel', event.target.value)} /></label><label>收容状态<input value={draft.status} onChange={(event) => update('status', event.target.value)} /></label><label>Site<input value={draft.site} onChange={(event) => update('site', event.target.value)} /></label><label>权限等级<input value={draft.clearanceLevel} onChange={(event) => update('clearanceLevel', event.target.value)} /></label><label>更新时间<input value={draft.lastUpdated} onChange={(event) => update('lastUpdated', event.target.value)} /></label></div></section>
     <section className="editor-card"><div className="editor-card-title"><span>02</span><h2>档案正文</h2></div><div className="form-stack"><label>特殊收容措施<textarea value={sectionValue('containmentProcedures')} onChange={(event) => updateSection('containmentProcedures', event.target.value)} /></label><label>描述<textarea value={sectionValue('description')} onChange={(event) => updateSection('description', event.target.value)} /></label><label>发现记录<textarea value={sectionValue('discoveryLog')} onChange={(event) => updateSection('discoveryLog', event.target.value)} /></label></div></section>
     <section className="editor-card"><div className="editor-card-title"><span>03</span><h2>特性与雷达图</h2></div><div className="editor-metric-list">{draft.radarMetrics.map((metric, index) => <label key={metric.label}>{metric.label}<input type="range" min="0" max="100" value={metric.value} onChange={(event) => setDraft((current) => ({ ...current, radarMetrics: current.radarMetrics.map((item, itemIndex) => itemIndex === index ? { ...item, value: Number(event.target.value) } : item) }))} /><output>{metric.value}</output></label>)}</div><div className="form-stack"><label>图像说明<textarea value={draft.imageCaption} onChange={(event) => update('imageCaption', event.target.value)} /></label></div></section>
