@@ -23,11 +23,31 @@ async function session(request: Request, env: Env): Promise<Session | null> { co
 async function github(env: Env, token: string, endpoint: string, init: RequestInit = {}) { const response = await fetch(`https://api.github.com${endpoint}`, { ...init, headers: { accept: 'application/vnd.github+json', authorization: `Bearer ${token}`, 'x-github-api-version': '2022-11-28', ...(init.headers ?? {}) } }); const body = await response.json().catch(() => ({})); if (!response.ok) throw new Error(body.message ?? `GitHub API ${response.status}`); return body }
 function safeId(value: string) { return value.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 70) }
 function b64(value: string) { return btoa(unescape(encodeURIComponent(value))) }
+const archiveRequired = ['id', 'itemNumber', 'title', 'objectClass', 'threatLevel', 'status', 'site', 'clearanceLevel', 'lastUpdated', 'image', 'imageCaption', 'containmentProcedures', 'description', 'discoveryLog', 'appendices', 'characteristics', 'radarMetrics', 'relatedArchives']
+const archiveAllowed = new Set([...archiveRequired, 'archiveStatus', 'metadata'])
+const isRecord = (value: unknown): value is Record<string, unknown> => value !== null && typeof value === 'object' && !Array.isArray(value)
+const checkString = (value: unknown, name: string, min = 1, max = Infinity) => typeof value === 'string' && value.length >= min && value.length <= max ? null : `${name} must be a string with ${min}-${max} characters`
+function validateArchive(value: Record<string, unknown>) {
+  const errors: string[] = []
+  for (const field of archiveRequired) if (!(field in value)) errors.push(`missing ${field}`)
+  for (const field of Object.keys(value)) if (!archiveAllowed.has(field)) errors.push(`unknown field ${field}`)
+  for (const [field, min, max] of [['id', 1, 80], ['itemNumber', 1, 80], ['title', 1, 120], ['objectClass', 1, 40], ['threatLevel', 1, 40], ['status', 1, 80], ['site', 1, 120], ['clearanceLevel', 1, 40], ['lastUpdated', 1, 40], ['image', 0, Infinity], ['imageCaption', 0, 500] ] as const) { const error = checkString(value[field], field, min, max); if (error) errors.push(error) }
+  if (typeof value.id === 'string' && !/^[a-z0-9-]{3,80}$/.test(value.id)) errors.push('id has invalid format')
+  for (const field of ['containmentProcedures', 'description', 'discoveryLog']) { const section = value[field]; if (!isRecord(section)) { errors.push(`${field} must be an object`); continue }; const titleError = checkString(section.title, `${field}.title`, 1, 100); if (titleError) errors.push(titleError); if (!Array.isArray(section.paragraphs) || section.paragraphs.length < 1 || section.paragraphs.length > 30) errors.push(`${field}.paragraphs must contain 1-30 items`); else section.paragraphs.forEach((item, index) => { const error = checkString(item, `${field}.paragraphs[${index}]`, 1, 5000); if (error) errors.push(error) }) }
+  if (!Array.isArray(value.appendices) || value.appendices.length > 20) errors.push('appendices must contain at most 20 items')
+  if (!Array.isArray(value.characteristics) || value.characteristics.length > 12) errors.push('characteristics must contain at most 12 items')
+  if (!Array.isArray(value.radarMetrics) || value.radarMetrics.length !== 6) errors.push('radarMetrics must contain exactly 6 items')
+  else value.radarMetrics.forEach((item, index) => { if (!isRecord(item)) { errors.push(`radarMetrics[${index}] must be an object`); return }; const labelError = checkString(item.label, `radarMetrics[${index}].label`, 1, 60); if (labelError) errors.push(labelError); if (typeof item.value !== 'number' || item.value < 0 || item.value > 100) errors.push(`radarMetrics[${index}].value must be 0-100`) })
+  if (!Array.isArray(value.relatedArchives) || value.relatedArchives.length > 20) errors.push('relatedArchives must contain at most 20 items')
+  if (value.archiveStatus !== undefined && !['draft', 'published'].includes(String(value.archiveStatus))) errors.push('archiveStatus is invalid')
+  return errors
+}
 async function createSubmission(request: Request, env: Env, origin: string) {
   const current = await session(request, env); if (!current) return json({ error: '请先使用 GitHub 登录。' }, 401, origin)
   const payload = await request.json<{ archive?: Record<string, unknown>; image?: { filename: string; contentBase64: string; mimeType: string } }>()
-  const archive = payload.archive; if (!archive || typeof archive.id !== 'string' || typeof archive.title !== 'string') return json({ error: '档案数据不完整。' }, 400, origin)
-  const id = safeId(archive.id); if (!id || id !== archive.id) return json({ error: '档案 slug 只允许小写字母、数字和短横线。' }, 400, origin)
+  const archive = payload.archive; if (!archive || !isRecord(archive)) return json({ error: '档案数据不完整。' }, 400, origin)
+  const archiveErrors = validateArchive(archive); if (archiveErrors.length) return json({ error: '档案数据校验失败。', details: archiveErrors }, 400, origin)
+  const id = safeId(String(archive.id)); if (!id || id !== archive.id) return json({ error: '档案 slug 只允许小写字母、数字和短横线。' }, 400, origin)
   const image = payload.image; if (!image || !['image/png', 'image/jpeg', 'image/webp'].includes(image.mimeType) || image.contentBase64.length > 7_000_000) return json({ error: '图片格式或大小不符合要求。' }, 400, origin)
   const existing = await github(env, current.token, `/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/contents/content/archives/${id}.json?ref=${env.GITHUB_DEFAULT_BRANCH}`, {} ).catch(() => null); if (existing) return json({ error: '该档案 slug 已存在，请换一个。' }, 409, origin)
   const branch = `contrib/archive-${id}-${current.userId.slice(-8)}`; const base = await github(env, current.token, `/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/git/ref/heads/${env.GITHUB_DEFAULT_BRANCH}`); await github(env, current.token, `/repos/${env.GITHUB_OWNER}/${env.GITHUB_REPO}/git/refs`, { method: 'POST', body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: base.object.sha }) });
