@@ -4,6 +4,13 @@ CREATE TABLE IF NOT EXISTS oauth_states (
   expires_at INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS auth_exchange_tickets (
+  ticket_hash TEXT PRIMARY KEY,
+  session_token_ciphertext TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,
+  consumed_at INTEGER
+);
+
 CREATE TABLE IF NOT EXISTS auth_sessions (
   session_hash TEXT PRIMARY KEY,
   github_user_id TEXT NOT NULL,
