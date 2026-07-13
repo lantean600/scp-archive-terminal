@@ -16,3 +16,5 @@
 .editor-auth-error{max-width:260px;color:#e28379;font:9px/1.45 var(--mono);text-align:right}
 .editor-user a[aria-disabled=true]{opacity:.65;cursor:wait}
 @media(max-width:700px){.editor-user-session,.editor-user-login{justify-content:flex-start}.editor-auth-error{text-align:left;max-width:100%}}
+
+.archive-link-active{color:var(--cyan)!important;background:#102127;padding-left:6px!important}.related-link small{margin-left:auto;color:#536b69;font-size:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.archive-link-active small{color:var(--cyan)}
