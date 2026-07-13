@@ -10,7 +10,7 @@ interface Env {
 }
 
 type Session = { userId: string; login: string; token: string }
-const json = (data: unknown, status = 200, origin = '*') => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' } })
+const json = (data: unknown, status = 200, origin = '*') => new Response(status === 204 ? null : JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'access-control-allow-origin': origin, 'access-control-allow-credentials': 'true', 'access-control-allow-headers': 'content-type', 'access-control-allow-methods': 'GET,POST,OPTIONS' } })
 const now = () => Math.floor(Date.now() / 1000)
 const encode = (value: ArrayBuffer | Uint8Array) => btoa(String.fromCharCode(...new Uint8Array(value instanceof ArrayBuffer ? value : value.buffer)))
 const decode = (value: string) => Uint8Array.from(atob(value), (char) => char.charCodeAt(0))
