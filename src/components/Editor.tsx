@@ -19,12 +19,25 @@ export function Editor() {
     return { ...initial, id: '', itemNumber: 'SCP-CN-', title: '', image: '' }
   })
   const [user, setUser] = useState<{ login: string } | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
   const [image, setImage] = useState<{ filename: string; contentBase64: string; mimeType: string } | null>(null)
   const [imagePreviewUrl, setImagePreviewUrl] = useState('')
   const [message, setMessage] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => { fetch(`${apiBase}/api/me`, { credentials: 'include' }).then((response) => response.ok ? response.json() : null).then((value) => setUser(value?.user ?? null)).catch(() => undefined) }, [])
+  useEffect(() => {
+    if (!apiBase) { setAuthChecked(true); return }
+    let active = true
+    fetch(`${apiBase}/api/me`, { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`auth status ${response.status}`)
+        return response.json() as Promise<{ user?: { login: string } | null }>
+      })
+      .then((value) => { if (active) setUser(value?.user ?? null) })
+      .catch(() => { if (active) setUser(null) })
+      .finally(() => { if (active) setAuthChecked(true) })
+    return () => { active = false }
+  }, [])
   useEffect(() => { localStorage.setItem('scp-editor-draft', JSON.stringify(draft)) }, [draft])
   useEffect(() => { setImagePreviewUrl(image ? `data:${image.mimeType};base64,${image.contentBase64}` : '') }, [image])
 
@@ -44,17 +57,21 @@ export function Editor() {
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setMessage('')
     if (!apiConfigured) { setMessage('编辑 API 尚未配置。请设置 VITE_API_BASE_URL 后再提交。'); return }
+    if (!authChecked) { setMessage('正在检查 GitHub 登录状态，请稍候。'); return }
+    if (!user) { setMessage('请先点击 GitHub 登录并完成授权。'); return }
     if (!draft.id || !draft.title || !draft.itemNumber) { setMessage('请先填写编号、slug 和标题。'); return }
     setSubmitting(true)
     try {
       const response = await fetch(`${apiBase}/api/submissions`, { method: 'POST', credentials: 'include', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ archive: { ...draft, image: image?.filename ?? draft.image, archiveStatus: 'draft' }, image }) })
-      const result = await response.json()
+      const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(result.error ?? '提交失败')
       setMessage(`提交成功：${result.pullRequestUrl}`)
-    } catch (error) { setMessage(error instanceof Error ? error.message : '提交失败') } finally { setSubmitting(false) }
+    } catch (error) {
+      setMessage(error instanceof TypeError ? '无法连接投稿 API?请刷新页面后重试。' : error instanceof Error ? error.message : '提交失败')
+    } finally { setSubmitting(false) }
   }
   const sectionValue = (field: 'containmentProcedures' | 'description' | 'discoveryLog') => sectionText(draft[field])
-  return <div className="editor-shell"><header className="editor-topbar"><a href={import.meta.env.BASE_URL} className="editor-back"><ArrowLeft size={16} /> 返回档案站</a><div><span className="editor-kicker">CONTRIBUTION TERMINAL</span><h1>提交一份新的档案</h1></div><div className="editor-user">{user ? <><span className="status-dot" /> @{user.login}</> : <a href={apiConfigured ? `${apiBase}/auth/github` : '#'}><LogIn size={15} /> GitHub 登录</a>}</div></header><form className="editor-layout" onSubmit={submit}>
+  return <div className="editor-shell"><header className="editor-topbar"><a href={import.meta.env.BASE_URL} className="editor-back"><ArrowLeft size={16} /> 返回档案站</a><div><span className="editor-kicker">CONTRIBUTION TERMINAL</span><h1>提交一份新的档案</h1></div><div className={`editor-user${user ? ' editor-user--authenticated' : ''}`}>{user ? <><span className="status-dot" /> 已登录 @{user.login}</> : authChecked ? <a href={apiConfigured ? `${apiBase}/auth/github` : '#'}><LogIn size={15} /> GitHub 登录</a> : <span className="editor-auth-checking">检查登录状态…</span>}</div></header><form className="editor-layout" onSubmit={submit}>
     <section className="editor-card"><div className="editor-card-title"><span>01</span><h2>基础信息</h2></div><div className="form-grid"><label>档案 slug<input value={draft.id} onChange={(event) => update('id', event.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} placeholder="scp-cn-new-archive" /></label><label>项目编号<input value={draft.itemNumber} onChange={(event) => update('itemNumber', event.target.value)} /></label><label className="wide">标题<input value={draft.title} onChange={(event) => update('title', event.target.value)} placeholder="异常项目名称" /></label><label>收容等级<input value={draft.objectClass} onChange={(event) => update('objectClass', event.target.value)} /></label><label>威胁等级<input value={draft.threatLevel} onChange={(event) => update('threatLevel', event.target.value)} /></label><label>收容状态<input value={draft.status} onChange={(event) => update('status', event.target.value)} /></label><label>Site<input value={draft.site} onChange={(event) => update('site', event.target.value)} /></label><label>权限等级<input value={draft.clearanceLevel} onChange={(event) => update('clearanceLevel', event.target.value)} /></label><label>更新时间<input value={draft.lastUpdated} onChange={(event) => update('lastUpdated', event.target.value)} /></label></div></section>
     <section className="editor-card"><div className="editor-card-title"><span>02</span><h2>档案正文</h2></div><div className="form-stack"><label>特殊收容措施<textarea value={sectionValue('containmentProcedures')} onChange={(event) => updateSection('containmentProcedures', event.target.value)} /></label><label>描述<textarea value={sectionValue('description')} onChange={(event) => updateSection('description', event.target.value)} /></label><label>发现记录<textarea value={sectionValue('discoveryLog')} onChange={(event) => updateSection('discoveryLog', event.target.value)} /></label></div></section>
     <section className="editor-card"><div className="editor-card-title"><span>03</span><h2>特性与雷达图</h2></div><div className="editor-metric-list">{draft.radarMetrics.map((metric, index) => <label key={metric.label}>{metric.label}<input type="range" min="0" max="100" value={metric.value} onChange={(event) => setDraft((current) => ({ ...current, radarMetrics: current.radarMetrics.map((item, itemIndex) => itemIndex === index ? { ...item, value: Number(event.target.value) } : item) }))} /><output>{metric.value}</output></label>)}</div><div className="form-stack"><label>图像说明<textarea value={draft.imageCaption} onChange={(event) => update('imageCaption', event.target.value)} /></label></div></section>
